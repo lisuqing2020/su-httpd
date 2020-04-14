@@ -1,5 +1,6 @@
 #include "utils.h"
 #include "net.h"
+#include <unistd.h>
 
 int main(int argc, char *argv[]) {
     int port = 80;
@@ -7,9 +8,10 @@ int main(int argc, char *argv[]) {
 
     ProgramParameterAnalysis(argc, argv, &port, directory);
 
-    int listen_fd = InitListenSocket(port, 1);
+    chdir(directory);
 
-    //epoll_create(1999); todo:epoll
-    
+    int listen_fd = InitListenSocket(port, 1);
+    EpollRun(listen_fd);
+
     return 0;
 }
