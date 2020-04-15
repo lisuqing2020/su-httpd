@@ -4,10 +4,49 @@
 #include <string.h>
 #include <stdio.h>
 #include <errno.h>
+#include <ctype.h>
 
 #define NAME "su-httpd"
-#define VERSION "1.0.0"
-#define DATE "20200405"
+#define VERSION "1.0.1"
+#define DATE "20200415"
+
+int hexit(char c) {
+	if (c >= '0' && c <= '9')
+		return c - '0';
+	if (c >= 'a' && c <= 'f')
+		return c - 'a' + 10;
+	if (c >= 'A' && c <= 'F')
+		return c - 'A' + 10;
+	return 0;
+}
+
+void decode16(char *dst, char *src) {
+	for (; *src != '\0'; ++dst, ++src) {
+		if (src[0] == '%' && isxdigit(src[1]) && isxdigit(src[2])) {
+			*dst = hexit(src[1]) * 16 + hexit(src[2]);
+			src += 2;
+		} else {
+			*dst = *src;
+		}
+	}
+	*dst = '\0';
+}
+
+void encode16(char *dst, int dst_size, const char *src) {
+	int i;
+	for (i = 0; *src != '\0' && i + 4 < dst_size; ++src) {
+		if (isalnum(*src) || strchr("/_.-~", *src) != NULL) {
+			*dst = *src;
+			++dst;
+			++dst_size;
+		} else {
+			sprintf(dst, "%%%02x", (int)*src & 0xff);
+			dst += 3;
+			dst_size += 3;
+		}
+	}
+	*dst = '\0';
+}
 
 void DirectoryPath(char *path) {
     int i = 0;

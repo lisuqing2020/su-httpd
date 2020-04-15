@@ -11,4 +11,13 @@ void ContentType(char *path, char *content_type);
 // 目录路径处理，如果后面没有/就加上，再去掉前面的.
 void DirectoryPath(char *path);
 
+// 16进制解码
+void decode16(char *dst, char *src);
+
+// 16转10
+int hexit(char c);
+
+// 路径16进制编码，http的头是不能有中文的
+void encode16(char *dst, int dst_size, const char *src);
+
 #endif

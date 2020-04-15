@@ -105,6 +105,9 @@ int RequestHandler(int connect_fd) {
     sscanf(buf, "%s %s %s", method, tmp, protocol);
     strcat(path, tmp);
 
+    // 把浏览器处理成的16进制字符串转换成中文字串
+    decode16(path, path);
+
     // 如果是get方法
     if(strcasecmp(method, "get") == 0) {
         struct stat status;
