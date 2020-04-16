@@ -33,6 +33,7 @@ void ResponseDirectory(int connect_fd, char *path) {
 
     // 写回浏览器
     write(connect_fd, buf, strlen(buf));
+    return;
 }
 
 int ResponseFile(int connect_fd, char *file_name) {
@@ -54,7 +55,7 @@ int ResponseFile(int connect_fd, char *file_name) {
     }
 
     // 循环读文件并写给客户端，因为是tcp可以一边读一边写
-    char buf[2048] = {0};
+    char buf[4096] = {0};
     size_t nblock;
     do {
         nblock = fread(buf, 512, 4, fp);
@@ -76,7 +77,7 @@ void ResponseHeader(int connect_fd, char *protocol, int status_code, char *statu
     ContentType(path, content_type);
 
     // 报头 content-type
-    sprintf(response_header + strlen(response_header), "content-type:%s; %s\r\n", content_type, "charset=utf-8");
+    sprintf(response_header + strlen(response_header), "content-type:%s\r\n", content_type);
 
     // 报头 content-length
     sprintf(response_header + strlen(response_header), "content-length:%ld\r\n\r\n", size);
@@ -125,6 +126,7 @@ int RequestHandler(int connect_fd) {
             }
         }
     }
+    close(connect_fd);
     return 0;
 }
 
@@ -142,7 +144,7 @@ int AcceptConnection(int listen_fd, int epfd) {
     // 打印客户端ip端口
     char client_ip[32];
     inet_ntop(AF_INET, &client_addr.sin_addr.s_addr, client_ip, sizeof(client_ip));
-    printf("client ip: %s:%d\n", client_ip, ntohs(client_addr.sin_port));
+    // printf("client ip: %s:%d\n", client_ip, ntohs(client_addr.sin_port));
 
     // 设置connfd非阻塞
     int flag = fcntl(connect_fd, F_GETFL);

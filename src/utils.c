@@ -70,7 +70,7 @@ void ContentType(char* path, char *content_type) {
         }
     }
     if(strcmp(path+index, ".html") == 0) {
-        strcpy(content_type, "text/html");
+        strcpy(content_type, "text/html; charset=utf-8");
     } else if(strcmp(path+index, ".xml") == 0) {
         strcpy(content_type, "text/xml");
     } else if(strcmp(path+index, ".gif") == 0) {
@@ -79,8 +79,10 @@ void ContentType(char* path, char *content_type) {
         strcpy(content_type, "image/jpeg");
     } else if(strcmp(path+index, ".png") == 0) {
         strcpy(content_type, "image/png");
+    } else if(strcmp(path+index, ".css") == 0) {
+        strcpy(content_type, "text/css");
     } else {
-        strcpy(content_type, "text/plain");
+        strcpy(content_type, "text/plain; charset=utf-8");
     }
 }
 
