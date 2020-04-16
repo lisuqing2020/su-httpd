@@ -48,21 +48,34 @@ int ResponseFile(int connect_fd, char *file_name) {
 #endif
 
     // 只读打开文件
-    FILE *fp = fopen(file_name, "r");
-    if(fp == NULL) {
-        perror("fopen");
+    // magic code
+    // FILE *fp = fopen(file_name, "rb");
+    // if(fp == NULL) {
+    //     perror("fopen");
+    //     return -1;
+    // }
+    // 循环读文件并写给客户端，因为是tcp可以一边读一边写
+    // char buf[4096] = {0};
+    // size_t nblock;
+    // do {
+    //     nblock = fread(buf, 512, 4, fp);
+    //     write(connect_fd, buf, strlen(buf));
+    // } while(nblock == 4);
+
+    // fclose(fp);
+
+    int fd = open(file_name, O_RDONLY);
+    if(fd == -1) {
+        perror("open");
         return -1;
     }
+    int len = 0;
+	char buf[2048];
+	while ((len = read(fd, buf, sizeof(buf))) > 0) {
+		write(connect_fd, buf, len);
+	}
+	close(fd);
 
-    // 循环读文件并写给客户端，因为是tcp可以一边读一边写
-    char buf[4096] = {0};
-    size_t nblock;
-    do {
-        nblock = fread(buf, 512, 4, fp);
-        write(connect_fd, buf, strlen(buf));
-    } while(nblock == 4);
-
-    fclose(fp);
     return 0;
 }
 
@@ -96,7 +109,7 @@ int RequestHandler(int connect_fd) {
     }
 
     // 如果不是读完了数据，返回
-    // magic
+    // magic code
     if(!(len == -1 && errno == EAGAIN)) {
         return -1;
     }
