@@ -7,8 +7,8 @@
 #include <ctype.h>
 
 #define NAME "su-httpd"
-#define VERSION "1.0.1"
-#define DATE "20200415"
+#define VERSION "1.1.0"
+#define DATE "20200418"
 
 int hexit(char c) {
 	if (c >= '0' && c <= '9')

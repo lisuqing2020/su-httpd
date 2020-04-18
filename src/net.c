@@ -17,7 +17,13 @@ void ResponseDirectory(int connect_fd, char *path) {
     char buf[4096] = {0};
     DirectoryPath(path);    // 处理路径最后的/
 
+    // 以防万一，响应目录时也将connect_fd设置为阻塞
+    int flag = fcntl(connect_fd, F_GETFL);
+    flag &= ~O_NONBLOCK;
+    fcntl(connect_fd, F_SETFL, flag);
+
     sprintf(buf, "<html><head><title>%s</title></head><body><table>", path);
+    write(connect_fd, buf, strlen(buf));
 
     // 读取目录，把目录内容写进buf
     struct dirent **ptr = NULL;
@@ -26,12 +32,11 @@ void ResponseDirectory(int connect_fd, char *path) {
     for(int i = 0; i < amount; ++i) {
         char *name = ptr[i] -> d_name;
         stat(name, &status);
-        // path+1跳过前面的. 在之前的代码可以确认前面一定有.
-        sprintf(buf+strlen(buf), "<tr><td><a href=\"%s%s\">%s</a></td><td>%ld</td>", path+1, name, name, status.st_size);
+        // path+1跳过前面的.符号 在之前的代码可以确认前面一定有.
+        sprintf(buf, "<tr><td><a href=\"%s%s\">%s</a></td><td>%ld</td>", path+1, name, name, status.st_size);
+        write(connect_fd, buf, strlen(buf));
     }
-    sprintf(buf+strlen(buf), "</table></body></html>");
-
-    // 写回浏览器
+    sprintf(buf, "</table></body></html>");
     write(connect_fd, buf, strlen(buf));
     return;
 }
@@ -47,35 +52,24 @@ int ResponseFile(int connect_fd, char *file_name) {
     }
 #endif
 
-    // 只读打开文件
-    // magic code
-    // FILE *fp = fopen(file_name, "rb");
-    // if(fp == NULL) {
-    //     perror("fopen");
-    //     return -1;
-    // }
-    // 循环读文件并写给客户端，因为是tcp可以一边读一边写
-    // char buf[4096] = {0};
-    // size_t nblock;
-    // do {
-    //     nblock = fread(buf, 512, 4, fp);
-    //     write(connect_fd, buf, strlen(buf));
-    // } while(nblock == 4);
-
-    // fclose(fp);
-
     int fd = open(file_name, O_RDONLY);
     if(fd == -1) {
         perror("open");
         return -1;
     }
+
     int len = 0;
-	char buf[4096];
+	char buf[2048];
+
+    // 如果connect_fd是非阻塞的，那么缓冲区满了就会下一次读写，这样图片显示不完整
+    // 设置为阻塞，就可以避免出错，这里不用再设置为非阻塞，因为这个函数走完，connect_fd就被关闭了
+    int flag = fcntl(connect_fd, F_GETFL);
+    flag &= ~O_NONBLOCK;
+    fcntl(connect_fd, F_SETFL, flag);
 	while ((len = read(fd, buf, sizeof(buf))) > 0) {
 		write(connect_fd, buf, len);
 	}
 	close(fd);
-
     return 0;
 }
 
