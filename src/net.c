@@ -70,7 +70,7 @@ int ResponseFile(int connect_fd, char *file_name) {
         return -1;
     }
     int len = 0;
-	char buf[2048];
+	char buf[4096];
 	while ((len = read(fd, buf, sizeof(buf))) > 0) {
 		write(connect_fd, buf, len);
 	}
@@ -99,7 +99,7 @@ void ResponseHeader(int connect_fd, char *protocol, int status_code, char *statu
     write(connect_fd, response_header, strlen(response_header));
 }
 
-int RequestHandler(int connect_fd) {
+int RequestHandler(int connect_fd, int epfd) {
     
     // 接受客户端发送的数据 
     char buf[2048];
@@ -108,9 +108,8 @@ int RequestHandler(int connect_fd) {
         count += len;
     }
 
-    // 如果不是读完了数据，返回
-    // magic code
-    if(!(len == -1 && errno == EAGAIN)) {
+    if(len == -1 && errno != EAGAIN) {
+        perror("read"); 
         return -1;
     }
 
@@ -140,6 +139,7 @@ int RequestHandler(int connect_fd) {
         }
     }
     close(connect_fd);
+    epoll_ctl(epfd, EPOLL_CTL_DEL, connect_fd, NULL);
     return 0;
 }
 
@@ -209,10 +209,12 @@ int EpollRun(int listen_fd) {
                 AcceptConnection(listen_fd, epfd);
             } else {                                   
                 // 有新的客户端请求
-                RequestHandler(current_fd); // 这里的current_fd是connect_fd
+                RequestHandler(current_fd, epfd); // 这里的current_fd是connect_fd
             }
         }
     }
+    close(listen_fd);
+    epoll_ctl(epfd, EPOLL_CTL_DEL, listen_fd, NULL);
     return 0;
 }
 

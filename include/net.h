@@ -12,7 +12,7 @@ int EpollRun(int listen_fd);
 int AcceptConnection(int listen_fd, int epfd);
 
 // 处理客户端请求
-int RequestHandler(int connect_fd);
+int RequestHandler(int connect_fd, int epfd);
 
 // 发送状态行，消息报头，空行
 void ResponseHeader(int connect_fd, char *protocol, int status_code, char *status_description, size_t size, char *path);
