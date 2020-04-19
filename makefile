@@ -1,4 +1,4 @@
-src=$(wildcard ./src/*.c)
+src=$(wildcard ./src/*.c ./lib/*.c)
 inc=include
 out=builds/
 std=c99

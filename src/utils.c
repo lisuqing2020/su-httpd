@@ -10,6 +10,12 @@
 #define VERSION "1.1.0"
 #define DATE "20200418"
 
+void UrlHandler(char *path) {
+    // 先删url参数
+    char *token = strtok(path, "?");
+    strcpy(path, token);
+}
+
 int hexit(char c) {
 	if (c >= '0' && c <= '9')
 		return c - '0';

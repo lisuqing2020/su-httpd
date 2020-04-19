@@ -114,6 +114,8 @@ int RequestHandler(int connect_fd, int epfd) {
 
     // 把浏览器处理成的16进制字符串转换成中文字串
     decode16(path, path);
+    UrlHandler(path);
+    printf("%s\n",path);
 
     // 如果是get方法
     if(strcasecmp(method, "get") == 0) {
