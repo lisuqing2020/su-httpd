@@ -18,13 +18,14 @@
 #include <netinet/in.h>
 #include <errno.h>
 #include <strings.h>
+#include <fcntl.h>
 
 
 static const int PARAMS_BUFF_LEN = 1024;    //环境参数buffer的大小
 static const int CONTENT_BUFF_LEN = 1024;   //内容buffer的大小
 
 static char *findStartHtml(char *content);
-static void getHtmlFromContent(FastCgi_t *c, char *content);
+static void getHtmlFromContent(FastCgi_t *c, char *content, int connect_fd);
 
 void FastCgi_init(FastCgi_t *c)
 {
@@ -224,7 +225,7 @@ int sendEndRequestRecord(FastCgi_t *c)
     return 1;
 }
 
-int readFromPhp(FastCgi_t *c)
+int readFromPhp(FastCgi_t *c, int connect_fd)
 {
     FCGI_Header responderHeader;
     char content[CONTENT_BUFF_LEN];
@@ -245,7 +246,7 @@ int readFromPhp(FastCgi_t *c)
             assert(ret == contentLen);
 
 
-            getHtmlFromContent(c, content);
+            getHtmlFromContent(c, content, connect_fd);
 
             /* 跳过填充部分 */
             if(responderHeader.paddingLength > 0){
@@ -288,20 +289,35 @@ char *findStartHtml(char *content)
     return NULL;
 }
 
-void getHtmlFromContent(FastCgi_t *c, char *content)
-{
-    /* 保存html内容开始位置 */
-    char *pt;
+void getHtmlFromContent(FastCgi_t *c, char *content, int connect_fd)
+{   
+    int flag = fcntl(connect_fd, F_GETFL);
+    flag &= ~O_NONBLOCK;
+    fcntl(connect_fd, F_SETFL, flag);
 
-    /* 读取到的content是html内容 */
-    if(c->flag_ == 1){
-        printf("%s",content);
-    } else {
-        if((pt = findStartHtml(content)) != NULL){
-            c->flag_ = 1;
-            for(char *i = pt; *i != '\0'; i++){
-                printf("%c",*i);
-            }
-        }
+    // 这里获取分隔空行，响应正文内容
+    // printf("%s\n",content);
+    char *html = strstr(content, "\r\n\r\n");
+    // printf("html = %s\n",html+4);
+    int ret = write(connect_fd, html+4, strlen(html+4));
+    // printf("ret = %d\n",ret);
+    if(ret == -1) {
+        perror("write");
     }
+
+
+    // /* 保存html内容开始位置 */
+    // char *pt;
+    // printf("%d\n",c->flag_);
+    // /* 读取到的content是html内容 */
+    // if(c->flag_ == 1){
+    //     write(connect_fd, content, strlen(content));
+    // } else {
+    //     if((pt = findStartHtml(content)) != NULL){
+    //         c->flag_ = 1;
+    //         for(char *i = pt; *i != '\0'; i++){
+    //             printf("%c",*i);
+    //         }
+    //     }
+    // }
 }

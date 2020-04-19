@@ -20,4 +20,7 @@ void encode16(char *dst, int dst_size, const char *src);
 // 处理路径参数
 void UrlHandler(char *path);
 
+// 判断是不是php文件
+int IsPhp(char *path);
+
 #endif

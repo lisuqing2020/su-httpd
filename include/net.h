@@ -23,4 +23,6 @@ int ResponseFile(int connect_fd, char *filename);
 // 响应目录内容
 void ResponseDirectory(int connect_fd, char *path);
 
+// fcgi里的内容，不了解直接用的
+void ResponsePhp(char *path, int connect_fd);
 #endif

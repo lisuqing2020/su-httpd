@@ -2,6 +2,7 @@
 #define NOT_USE_404_HTML 1
 #include "net.h"
 #include "utils.h"
+#include "fcgi.h"
 #include <arpa/inet.h>
 #include <sys/epoll.h>
 #include <stdio.h>
@@ -12,6 +13,21 @@
 #include <strings.h>
 #include <errno.h>
 #include <dirent.h>
+#include <stdlib.h>
+
+void ResponsePhp(char *path, int connect_fd) {
+    FastCgi_t *c;
+    c = (FastCgi_t *)malloc(sizeof(FastCgi_t));
+    FastCgi_init(c);
+    setRequestId(c,1);
+    startConnect(c);
+    sendStartRequestRecord(c);
+    sendParams(c, "SCRIPT_FILENAME",path);
+    sendParams(c, "REQUEST_METHOD","GET");
+    sendEndRequestRecord(c);
+    readFromPhp(c, connect_fd);
+    FastCgi_finit(c);
+}
 
 void ResponseDirectory(int connect_fd, char *path) {
     char buf[4096] = {0};
@@ -115,7 +131,6 @@ int RequestHandler(int connect_fd, int epfd) {
     // 把浏览器处理成的16进制字符串转换成中文字串
     decode16(path, path);
     UrlHandler(path);
-    printf("%s\n",path);
 
     // 如果是get方法
     if(strcasecmp(method, "get") == 0) {
@@ -126,8 +141,13 @@ int RequestHandler(int connect_fd, int epfd) {
             ResponseFile(connect_fd, "./404.html");
         } else {
             if(S_ISREG(status.st_mode)) {   // path是个文件
-                ResponseHeader(connect_fd, protocol, 200, "OK", status.st_size, path);
-                ResponseFile(connect_fd, path);
+                if(IsPhp(path)) {
+                    ResponseHeader(connect_fd, protocol, 200, "OK", -1, path);
+                    ResponsePhp(path, connect_fd);
+                } else {
+                    ResponseHeader(connect_fd, protocol, 200, "OK", status.st_size, path);
+                    ResponseFile(connect_fd, path);
+                }
             } else if(S_ISDIR(status.st_mode)) {    // path是个目录
                 ResponseHeader(connect_fd, protocol, 200, "OK", -1, ".html");
                 ResponseDirectory(connect_fd, path);

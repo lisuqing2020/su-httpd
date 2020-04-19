@@ -10,6 +10,19 @@
 #define VERSION "1.1.0"
 #define DATE "20200418"
 
+int IsPhp(char *path) {
+    int index = -1;
+    for(int i = 0; path[i] != '\0'; ++i) {
+        if(path[i] == '.') {
+            index = i;
+        }
+    }
+    if(strcmp(path+index, ".php") == 0) {
+        return 1;
+    }
+    return 0;
+}
+
 void UrlHandler(char *path) {
     // 先删url参数
     char *token = strtok(path, "?");
@@ -75,7 +88,7 @@ void ContentType(char* path, char *content_type) {
             index = i;
         }
     }
-    if(strcmp(path+index, ".html") == 0) {
+    if(strcmp(path+index, ".html") == 0 || strcmp(path+index, ".php") == 0) {
         strcpy(content_type, "text/html; charset=utf-8");
     } else if(strcmp(path+index, ".xml") == 0) {
         strcpy(content_type, "text/xml");
