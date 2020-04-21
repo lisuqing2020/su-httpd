@@ -130,7 +130,13 @@ int RequestHandler(int connect_fd, int epfd) {
 
     // 把浏览器处理成的16进制字符串转换成中文字串
     decode16(path, path);
-    UrlHandler(path);
+
+    // 处理路径，获取文件和参数
+    char *parameter[1024];
+    for(int i = 0; i < 1024; ++i) {
+        parameter[i] = (char*)malloc(128);  // 释放在本函数末尾
+    }
+    int nums = UrlHandler(path, parameter);
 
     // 如果是get方法
     if(strcasecmp(method, "get") == 0) {
@@ -153,6 +159,10 @@ int RequestHandler(int connect_fd, int epfd) {
                 ResponseDirectory(connect_fd, path);
             }
         }
+    }
+
+    for(int i = 0; i < 1024; ++i) {
+        free(parameter[i]); // 释放存参数的字串串数组
     }
     close(connect_fd);
     epoll_ctl(epfd, EPOLL_CTL_DEL, connect_fd, NULL);

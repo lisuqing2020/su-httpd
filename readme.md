@@ -12,7 +12,7 @@
 - v1.0.0：支持GET请求，目录/文件
     - v1.0.1：修复了中文路径问题
     - v1.0.2：make install添加到/usr/bin
-    - v1.0.3：解决了访问目录资源连接不断开的buf，在requesthandler中服务器主动close connectfd
+    - v1.0.3：解决了访问目录资源连接不断开的bug，在requesthandler中服务器主动close connectfd
     - v1.0.4：解决了EOT传输结束符的问题，响应正文的buf不能卡的刚好
     - v1.0.5：解决了外部css无法连接问题，需要支持css的content-type
     - v1.0.6：解决了读取图片不成功的问题，fopen换成了open
@@ -23,6 +23,9 @@
         - 临时设置后不需要再设置回非阻塞，因为函数走完这个connect_fd就被关闭了
     - v1.1.1：url后可以接参数了，不过还没什么用
     - v1.2.0：支持php，但是php文件无法接收表单数据
+    - v1.2.1：事实上功能没变，就是加了几行代码用来获取url的参数部分
+        - 在这里sf了无数遍，心态炸了，有眼瞎，其次是while strtok的时候，token有可能为NULL，然后我没判断就strcpy了
+        - 这里要注意的是我传参是字符串指针数组，需要循环malloc，感觉这里应该有更好的处理方式
 
 ## 已知BUG
 - 程序启动传参那里还有点问题
