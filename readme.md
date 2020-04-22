@@ -26,10 +26,14 @@
     - v1.2.1：事实上功能没变，就是加了几行代码用来获取url的参数部分
         - 在这里sf了无数遍，心态炸了，有眼瞎，其次是while strtok的时候，token有可能为NULL，然后我没判断就strcpy了
         - 这里要注意的是我传参是字符串指针数组，需要循环malloc，感觉这里应该有更好的处理方式
+- v2.0.0
+    - 令人激动的进步，支持php获取get参数了，关于fastcgi发送参数一直找不到解决办法，全仰仗这位大哥的[博客](https://blog.csdn.net/liushengxi_root/article/details/84976353)
+    - 支持post正在向我招手👋
 
 ## 已知BUG
 - 程序启动传参那里还有点问题
 - 因为用到了别人写的代码，测试php文件有的会在read上出错，初步猜测是文件太大
+    - 已经可以确定就是文件长度的问题了，httpd: ./lib/fcgi.c:246: readFromPhp: Assertion `ret == contentLen' failed.
 
 ## TODO
 - 添加到service

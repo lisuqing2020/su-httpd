@@ -7,8 +7,8 @@
 #include <ctype.h>
 
 #define NAME "su-httpd"
-#define VERSION "1.2.1"
-#define DATE "20200421"
+#define VERSION "2.0.0"
+#define DATE "20200422"
 
 int IsPhp(char *path) {
     int index = -1;
@@ -23,19 +23,22 @@ int IsPhp(char *path) {
     return 0;
 }
 
-int UrlHandler(char *path, char **parameter) {
+int UrlHandler(char *path, char *parameter) {
     // 先删url参数
     char *token = strtok(path, "?");
     strcpy(path, token);
     int i = 0;
     while(token != NULL) {
-        token = strtok(NULL, "&");
+        token = strtok(NULL, "?");
         if(token) {
-            // 这里错了段错误N遍，这里有可能是NULL值
-            strcpy(parameter[i++], token);
+            strcpy(parameter, token);
         }
+        // if(token) {
+        //     // 这里错了段错误N遍，这里有可能是NULL值
+        //     strcpy(parameter[i++], token);
+        // }
     }
-    return i;
+    return 0;
 }
 
 int hexit(char c) {

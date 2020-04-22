@@ -18,7 +18,7 @@ void decode16(char *dst, char *src);
 void encode16(char *dst, int dst_size, const char *src);
 
 // 处理路径参数
-int UrlHandler(char *path, char **parameter);
+int UrlHandler(char *path, char *parameter);
 
 // 判断是不是php文件
 int IsPhp(char *path);

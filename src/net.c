@@ -15,7 +15,7 @@
 #include <dirent.h>
 #include <stdlib.h>
 
-void ResponsePhp(char *path, int connect_fd) {
+void ResponsePhp(char *path, int connect_fd, char *parameter) {
     FastCgi_t *c;
     c = (FastCgi_t *)malloc(sizeof(FastCgi_t));
     FastCgi_init(c);
@@ -24,6 +24,9 @@ void ResponsePhp(char *path, int connect_fd) {
     sendStartRequestRecord(c);
     sendParams(c, "SCRIPT_FILENAME",path);
     sendParams(c, "REQUEST_METHOD","GET");
+    sendParams(c, "CONTENT_LENGTH", "0"); //　0 表示没有　body
+    sendParams(c, "CONTENT_TYPE", "text/html");
+    sendParams(c, "QUERY_STRING", parameter);
     sendEndRequestRecord(c);
     readFromPhp(c, connect_fd);
     FastCgi_finit(c);
@@ -132,10 +135,11 @@ int RequestHandler(int connect_fd, int epfd) {
     decode16(path, path);
 
     // 处理路径，获取文件和参数
-    char *parameter[1024];
-    for(int i = 0; i < 1024; ++i) {
-        parameter[i] = (char*)malloc(128);  // 释放在本函数末尾
-    }
+    // char *parameter[1024];
+    // for(int i = 0; i < 1024; ++i) {
+    //     parameter[i] = (char*)malloc(128);  // 释放在本函数末尾
+    // }
+    char parameter[1024];
     int nums = UrlHandler(path, parameter);
 
     // 如果是get方法
@@ -149,7 +153,7 @@ int RequestHandler(int connect_fd, int epfd) {
             if(S_ISREG(status.st_mode)) {   // path是个文件
                 if(IsPhp(path)) {
                     ResponseHeader(connect_fd, protocol, 200, "OK", -1, path);
-                    ResponsePhp(path, connect_fd);
+                    ResponsePhp(path, connect_fd, parameter);
                 } else {
                     ResponseHeader(connect_fd, protocol, 200, "OK", status.st_size, path);
                     ResponseFile(connect_fd, path);
@@ -161,9 +165,9 @@ int RequestHandler(int connect_fd, int epfd) {
         }
     }
 
-    for(int i = 0; i < 1024; ++i) {
-        free(parameter[i]); // 释放存参数的字串串数组
-    }
+    // for(int i = 0; i < 1024; ++i) {
+    //     free(parameter[i]); // 释放存参数的字串串数组
+    // }
     close(connect_fd);
     epoll_ctl(epfd, EPOLL_CTL_DEL, connect_fd, NULL);
     return 0;
