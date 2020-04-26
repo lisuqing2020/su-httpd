@@ -19,6 +19,7 @@
 #include <errno.h>
 #include <strings.h>
 #include <fcntl.h>
+#include <stdlib.h>
 
 
 static const int PARAMS_BUFF_LEN = 1024;    //环境参数buffer的大小
@@ -242,18 +243,20 @@ int readFromPhp(FastCgi_t *c, int connect_fd)
             bzero(content, CONTENT_BUFF_LEN);
 
             /* 读取获取内容 */
-            ret = 0;
-            while(1) {
-                int len = read(c->sockfd_, content+ret, contentLen);
-                if(len <= 0) {
-                    break;
+            char buf[1024];
+            char* cntnt = malloc(1024);     // free在getHtmlFromContent
+            int size = 0;
+            while((ret = read(c->sockfd_, buf, sizeof(buf))) > 0) {
+                if(size+ret >= sizeof(cntnt)) {
+                    cntnt = realloc(cntnt, size+ret+1024);
                 }
-                ret += len;
-            }
+                strcpy(cntnt+size,buf);
+                size += ret;
+            }   
             // ret = read(c->sockfd_, content, contentLen);
             // assert(ret == contentLen);
 
-            getHtmlFromContent(c, content, connect_fd);
+            getHtmlFromContent(c, cntnt, connect_fd);
 
             /* 跳过填充部分 */
             if(responderHeader.paddingLength > 0){
@@ -316,6 +319,7 @@ void getHtmlFromContent(FastCgi_t *c, char *content, int connect_fd)
     // printf("html = %s\n",html+4);
     int ret = write(connect_fd, html+4, strlen(html+4));
     // printf("ret = %d\n",ret);
+    free(content);
     if(ret == -1) {
         perror("write");
     }

@@ -38,6 +38,7 @@
     - 令人激动的进步，支持php获取get参数了，关于fastcgi发送参数一直找不到解决办法，全仰仗这位大哥的[博客](https://blog.csdn.net/liushengxi_root/article/details/84976353)
     - 支持post正在向我招手👋
     - v2.0.1 对php大文件的bug做了改动，但现在是一次性读取到buf，但如果更大的文件就还是有错，应该是循环读循环写，但是用的是别人的代码就很难改...
+    - v2.0.2 php大文件的问题解决了，用了malloc和realloc动态分配内存，✌
 
 ## 已知BUG
 - 程序启动传参那里还有点问题
