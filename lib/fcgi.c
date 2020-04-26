@@ -22,7 +22,7 @@
 
 
 static const int PARAMS_BUFF_LEN = 1024;    //环境参数buffer的大小
-static const int CONTENT_BUFF_LEN = 1024;   //内容buffer的大小
+static const int CONTENT_BUFF_LEN = 4096;   //内容buffer的大小
 
 static char *findStartHtml(char *content);
 static void getHtmlFromContent(FastCgi_t *c, char *content, int connect_fd);
@@ -242,16 +242,31 @@ int readFromPhp(FastCgi_t *c, int connect_fd)
             bzero(content, CONTENT_BUFF_LEN);
 
             /* 读取获取内容 */
-            ret = read(c->sockfd_, content, contentLen);
-            assert(ret == contentLen);
-
+            ret = 0;
+            while(1) {
+                int len = read(c->sockfd_, content+ret, contentLen);
+                if(len <= 0) {
+                    break;
+                }
+                ret += len;
+            }
+            // ret = read(c->sockfd_, content, contentLen);
+            // assert(ret == contentLen);
 
             getHtmlFromContent(c, content, connect_fd);
 
             /* 跳过填充部分 */
             if(responderHeader.paddingLength > 0){
-                ret = read(c->sockfd_, tmp, responderHeader.paddingLength);
-                assert(ret == responderHeader.paddingLength);
+                ret = 0;
+                while(1) {
+                    int len = read(c->sockfd_, tmp+ret, responderHeader.paddingLength);
+                    if(len <= 0) {
+                        break;
+                    }
+                    ret += len;
+                }
+                // ret = read(c->sockfd_, tmp, responderHeader.paddingLength);
+                // assert(ret == responderHeader.paddingLength);
             }
         } //end of type FCGI_STDOUT
         else if(responderHeader.type == FCGI_STDERR){
@@ -304,7 +319,6 @@ void getHtmlFromContent(FastCgi_t *c, char *content, int connect_fd)
     if(ret == -1) {
         perror("write");
     }
-
 
     // /* 保存html内容开始位置 */
     // char *pt;

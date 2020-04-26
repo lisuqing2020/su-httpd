@@ -8,6 +8,14 @@
     - -h/--help：帮助文档
     - -v/--version：获取版本信息
 
+## 依赖
+- php-fpm
+    - 确保安装php-fpm
+    - 修改配置文件：/usr/local/php/etc/php-fpm.conf
+        - listen = /tmp/php-cgi.sock 替换为 listen = listen = 127.0.0.1:9000
+    - 重启php-fpm
+        - sudo service php-fpm restart
+
 ## 版本更新
 - v1.0.0：支持GET请求，目录/文件
     - v1.0.1：修复了中文路径问题
@@ -29,6 +37,7 @@
 - v2.0.0
     - 令人激动的进步，支持php获取get参数了，关于fastcgi发送参数一直找不到解决办法，全仰仗这位大哥的[博客](https://blog.csdn.net/liushengxi_root/article/details/84976353)
     - 支持post正在向我招手👋
+    - v2.0.1 对php大文件的bug做了改动，但现在是一次性读取到buf，但如果更大的文件就还是有错，应该是循环读循环写，但是用的是别人的代码就很难改...
 
 ## 已知BUG
 - 程序启动传参那里还有点问题
