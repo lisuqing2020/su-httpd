@@ -15,7 +15,7 @@
 #include <dirent.h>
 #include <stdlib.h>
 
-void ResponsePhp(char *path, int connect_fd, char *parameter) {
+void ResponsePhp(char *path, int connect_fd, char *parameter, char *method, char *content_length, char *content_type) {
     FastCgi_t *c;
     c = (FastCgi_t *)malloc(sizeof(FastCgi_t));
     FastCgi_init(c);
@@ -23,11 +23,32 @@ void ResponsePhp(char *path, int connect_fd, char *parameter) {
     startConnect(c);
     sendStartRequestRecord(c);
     sendParams(c, "SCRIPT_FILENAME",path);
-    sendParams(c, "REQUEST_METHOD","GET");
-    sendParams(c, "CONTENT_LENGTH", "0"); //　0 表示没有　body
-    sendParams(c, "CONTENT_TYPE", "text/html");
-    sendParams(c, "QUERY_STRING", parameter);
-    sendEndRequestRecord(c);
+    if(strcasecmp(method, "get") == 0) {
+        sendParams(c, "REQUEST_METHOD","GET");
+        sendParams(c, "CONTENT_LENGTH", "0"); //　0 表示没有　body
+        sendParams(c, "CONTENT_TYPE", "text/html");
+        sendParams(c, "QUERY_STRING", parameter);
+        sendEndRequestRecord(c);
+    } else if(strcasecmp(method, "post") == 0) {
+        sendParams(c, "REQUEST_METHOD", "POST");
+        sendParams(c, "CONTENT_LENGTH", content_length); //　17 为body的长度 !!!!
+        sendParams(c, "CONTENT_TYPE", content_type);
+        sendEndRequestRecord(c);
+
+        /*FCGI_Header makeHeader(int type, int requestId,
+                        int contentLength, int paddingLength)*/
+        //设置type==5,为了发 body
+        FCGI_Header t = makeHeader(FCGI_STDIN, c->requestId_, atoi(content_length), 0); //　17 为body的长度 !!!!
+        send(c->sockfd_, &t, sizeof(t), 0);
+
+        /*发送正式的 body */
+        send(c->sockfd_, parameter, atoi(content_length), 0); //　17 为body的长度 !!!!
+
+        //制造头告诉body结束　
+        FCGI_Header endHeader;
+        endHeader = makeHeader(FCGI_STDIN, c->requestId_, 0, 0);
+        send(c->sockfd_, &endHeader, sizeof(endHeader), 0);
+    }
     readFromPhp(c, connect_fd);
     FastCgi_finit(c);
 }
@@ -115,10 +136,22 @@ void ResponseHeader(int connect_fd, char *protocol, int status_code, char *statu
 int RequestHandler(int connect_fd, int epfd) {
     
     // 接受客户端发送的数据 
-    char buf[2048];
-    int len = 0, count = 0;
-    while((len = read(connect_fd, buf+count, sizeof(buf)-count)) > 0) {
-        count += len;
+    // char buf[2048];
+    // int len = 0, count = 0;
+    // while((len = read(connect_fd, buf+count, sizeof(buf)-count)) > 0) {
+    //     count += len;
+    // }
+
+    // 接受客户端发送的数据 
+    char buf[1024];
+    int len = 0, size = 0;
+    char* cntnt = malloc(1024);
+    while((len = read(connect_fd, buf, sizeof(buf))) > 0) {
+        if(size+len >= sizeof(cntnt)) {
+            cntnt = realloc(cntnt, size+len+1024);
+        }
+        strcpy(cntnt+size, buf);
+        size += len;
     }
 
     if(len == -1 && errno != EAGAIN) {
@@ -153,10 +186,46 @@ int RequestHandler(int connect_fd, int epfd) {
             if(S_ISREG(status.st_mode)) {   // path是个文件
                 if(IsPhp(path)) {
                     ResponseHeader(connect_fd, protocol, 200, "OK", -1, path);
-                    ResponsePhp(path, connect_fd, parameter);
+                    ResponsePhp(path, connect_fd, parameter, method, NULL, NULL);
                 } else {
                     ResponseHeader(connect_fd, protocol, 200, "OK", status.st_size, path);
                     ResponseFile(connect_fd, path);
+                }
+            } else if(S_ISDIR(status.st_mode)) {    // path是个目录
+                ResponseHeader(connect_fd, protocol, 200, "OK", -1, ".html");
+                ResponseDirectory(connect_fd, path);
+            }
+        }
+    } else if(strcasecmp(method, "post") == 0) {
+        // 拿到content-type
+        char content_type[128];
+        char* p = strstr(cntnt, "Content-Type");
+        p += strlen("Content-Type: ");
+        int i = 0;
+        while(*p != '\r') {
+            content_type[i++] = *(p++);
+        }
+        // printf("%s\n",content_type);
+        // 拿到body
+        char* body = strstr(cntnt, "\r\n\r\n") + 4;
+        // printf("%s\n",body);
+        decode16(body,body);
+        
+        struct stat status;
+        int ret = stat(path, &status);
+        if(ret == -1) {
+            ResponseHeader(connect_fd, protocol, 404, "Not Found", -1, "./404.html");
+            ResponseFile(connect_fd, "./404.html");
+        } else {
+            if(S_ISREG(status.st_mode)) {   // path是个文件
+                if(IsPhp(path)) {
+                    ResponseHeader(connect_fd, protocol, 200, "OK", -1, path);
+                    char content_length[32];
+                    sprintf(content_length, "%d", strlen(body));
+                    ResponsePhp(path, connect_fd, body, method, content_length, content_type);
+                } else {
+                    ResponseHeader(connect_fd, protocol, 403, "Forbidden", -1, "./403.html");
+                    ResponseFile(connect_fd, "./403.html");
                 }
             } else if(S_ISDIR(status.st_mode)) {    // path是个目录
                 ResponseHeader(connect_fd, protocol, 200, "OK", -1, ".html");

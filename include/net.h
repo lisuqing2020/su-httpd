@@ -24,5 +24,5 @@ int ResponseFile(int connect_fd, char *filename);
 void ResponseDirectory(int connect_fd, char *path);
 
 // fcgi里的内容，不了解直接用的
-void ResponsePhp(char *path, int connect_fd, char *parameter);
+void ResponsePhp(char *path, int connect_fd, char *parameter, char *method, char *content_length, char *content_type);
 #endif

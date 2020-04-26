@@ -7,8 +7,8 @@
 #include <ctype.h>
 
 #define NAME "su-httpd"
-#define VERSION "2.0.0"
-#define DATE "20200422"
+#define VERSION "3.0.0"
+#define DATE "20200426"
 
 int IsPhp(char *path) {
     int index = -1;
