@@ -134,21 +134,14 @@ void ResponseHeader(int connect_fd, char *protocol, int status_code, char *statu
 }
 
 int RequestHandler(int connect_fd, int epfd) {
-    
-    // 接受客户端发送的数据 
-    // char buf[2048];
-    // int len = 0, count = 0;
-    // while((len = read(connect_fd, buf+count, sizeof(buf)-count)) > 0) {
-    //     count += len;
-    // }
 
     // 接受客户端发送的数据 
     char buf[1024];
     int len = 0, size = 0;
-    char* cntnt = malloc(1024);
-    while((len = read(connect_fd, buf, sizeof(buf))) > 0) {
+    char* cntnt = malloc(4096); //释放在elseif post里，211行
+    while((len = read(connect_fd, buf, 1024)) > 0) {
         if(size+len >= sizeof(cntnt)) {
-            cntnt = realloc(cntnt, size+len+1024);
+            cntnt = realloc(cntnt, size+len+2048);
         }
         strcpy(cntnt+size, buf);
         size += len;
@@ -161,17 +154,13 @@ int RequestHandler(int connect_fd, int epfd) {
 
     // 拿到请求行
     char method[8], path[128] = ".", protocol[8], tmp[128]; 
-    sscanf(buf, "%s %s %s", method, tmp, protocol);
+    sscanf(cntnt, "%s %s %s", method, tmp, protocol);
     strcat(path, tmp);
 
     // 把浏览器处理成的16进制字符串转换成中文字串
     decode16(path, path);
 
-    // 处理路径，获取文件和参数
-    // char *parameter[1024];
-    // for(int i = 0; i < 1024; ++i) {
-    //     parameter[i] = (char*)malloc(128);  // 释放在本函数末尾
-    // }
+    // 处理路径获取文件名和参数
     char parameter[1024];
     int nums = UrlHandler(path, parameter);
 
@@ -205,9 +194,10 @@ int RequestHandler(int connect_fd, int epfd) {
         while(*p != '\r') {
             content_type[i++] = *(p++);
         }
-        // printf("%s\n",content_type);
+
         // 拿到body
         char* body = strstr(cntnt, "\r\n\r\n") + 4;
+        free(cntnt);
         // printf("%s\n",body);
         decode16(body,body);
         
@@ -234,9 +224,6 @@ int RequestHandler(int connect_fd, int epfd) {
         }
     }
 
-    // for(int i = 0; i < 1024; ++i) {
-    //     free(parameter[i]); // 释放存参数的字串串数组
-    // }
     close(connect_fd);
     epoll_ctl(epfd, EPOLL_CTL_DEL, connect_fd, NULL);
     return 0;
